@@ -1,0 +1,120 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <section class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">SVG Generator</h1>
+    <div class="badge badge-lg">Hugging Face</div>
+  </section>
+
+  <!-- zone 1 : prompt -->
+  <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
+    <div class="card-body gap-3">
+      <label class="form-control w-full">
+        <div class="label">
+          <span class="label-text">Prompt</span>
+          <span class="label-text-alt">Décris l’objet à dessiner</span>
+        </div>
+        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24" placeholder="a red car"></textarea>
+      </label>
+
+      <div class="card-actions justify-end">
+        <button id="generate-button" class="btn btn-primary">Générer</button>
+      </div>
+
+      <div id="alert" class="hidden"></div>
+    </div>
+  </div>
+
+  <!-- zones 2 & 3 : aperçu SVG + code SVG -->
+  <div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title">Aperçu</h2>
+        <div id="svg-container" class="min-h-64 rounded-box border border-base-300 grid place-items-center">
+          <span class="opacity-60">Le SVG généré s’affichera ici</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title">Code SVG</h2>
+        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
+        <div class="card-actions justify-end">
+          <button id="copy" class="btn btn-secondary btn-sm">Copier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script type="module">
+  // utilitaires UI
+  const $ = (sel) => document.querySelector(sel);
+  const btn = $('#generate-button');
+  const out = $('#svg-output');
+  const box = $('#svg-container');
+  const alertBox = $('#alert');
+  const copyBtn = $('#copy');
+
+  function showAlert(type, text) {
+    alertBox.className = `alert alert-${type} mb-2`;
+    alertBox.textContent = text;
+  }
+
+  async function generateSVG(prompt) {
+    const res = await fetch('/api/generateSVG', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'Erreur API');
+    const data = await res.json();
+    return data.svg;
+  }
+
+  async function handleSubmit() {
+    const promptEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('user-prompt'));
+    const prompt = (promptEl?.value || '').trim();
+    if (!prompt) {
+      showAlert('warning', 'Écris un prompt avant de générer.');
+      return;
+    }
+    alertBox.className = 'hidden';
+
+    // loading
+    box.innerHTML = `<span class="loading loading-ring loading-lg"></span>`;
+    out.textContent = '';
+    btn.disabled = true;
+
+    try {
+      const svg = await generateSVG(prompt);
+      if (!svg) {
+        showAlert('info', "Le modèle n'a pas renvoyé de balise <svg>.");
+        box.innerHTML = `<div class="opacity-60">Aucun SVG détecté</div>`;
+        return;
+      }
+      out.textContent = svg;
+      box.innerHTML = svg;
+    } catch (e) {
+      console.error(e);
+      showAlert('error', e.message || 'Erreur de génération');
+      box.innerHTML = `<div class="opacity-60">Erreur…</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  btn?.addEventListener('click', handleSubmit);
+
+  copyBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(out.textContent || '');
+      showAlert('success', 'SVG copié dans le presse-papiers ✅');
+    } catch {
+      showAlert('error', 'Impossible de copier');
+    }
+  });
+</script>
