@@ -1,0 +1,38 @@
+---
+export const prerender = false;
+import Layout from '../layouts/Layout.astro';
+import pb from '../utils/pb';
+
+const COLLECTION = import.meta.env.PB_SVG_COLLECTION ?? 'svgs';
+const items = await pb.collection(COLLECTION).getFullList({ sort: '-created' });
+---
+
+<Layout>
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Bibliothèque</h1>
+    <a href="/generator" class="btn btn-primary">Nouveau SVG</a>
+  </div>
+
+  {items.length === 0 ? (
+    <div class="alert">Aucun SVG enregistré pour l’instant.</div>
+  ) : (
+    <section class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((it) => (
+        <article class="card bg-base-100 shadow border border-base-300">
+          <div class="card-body gap-3">
+            <h2 class="card-title">{it.title}</h2>
+            <div class="rounded-box border border-base-300 p-2 bg-base-200">
+              <div set:html={it.code}></div>
+            </div>
+            <details class="collapse collapse-arrow border border-base-300">
+              <summary class="collapse-title text-sm">Voir le code</summary>
+              <div class="collapse-content">
+                <pre class="mockup-code text-xs max-h-56 overflow-auto"><code>{it.code}</code></pre>
+              </div>
+            </details>
+          </div>
+        </article>
+      ))}
+    </section>
+  )}
+</Layout>
