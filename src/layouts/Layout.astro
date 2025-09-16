@@ -2,19 +2,61 @@
 import "../styles/global.css";
 ---
 <!doctype html>
-<html lang="en" data-theme="light" class="h-full">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body class="h-full">
-		<div class="h-full flex flex-col min-h-0">
-			<div class="flex-1 min-h-0">
-				<slot />
-			</div>
-		</div>
-	</body>
+<html lang="fr" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>SVG Generator</title>
+  </head>
+
+  <body class="h-full bg-base-200">
+    <!-- Navbar -->
+    <header class="navbar bg-base-100/80 backdrop-blur border-b border-base-300">
+      <div class="container mx-auto px-4">
+        <div class="navbar-start">
+          <a href="/" class="btn btn-ghost text-xl">SVG<span class="text-primary">Studio</span></a>
+        </div>
+
+        <div class="navbar-center hidden md:flex">
+          <ul class="menu menu-horizontal gap-1">
+            <li><a href="/" class="btn btn-ghost btn-sm">Accueil</a></li>
+            <li><a href="/generator" class="btn btn-ghost btn-sm">Générateur</a></li>
+          </ul>
+        </div>
+
+        <div class="navbar-end">
+          <!-- Theme controller DaisyUI -->
+          <div class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost">Thème</label>
+            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
+              <li>
+                <label class="label cursor-pointer justify-between">
+                  <span>Light</span>
+                  <input type="radio" name="theme" class="theme-controller" value="light" />
+                </label>
+              </li>
+              <li>
+                <label class="label cursor-pointer justify-between">
+                  <span>Dark</span>
+                  <input type="radio" name="theme" class="theme-controller" value="dark" />
+                </label>
+              </li>
+              <li>
+                <label class="label cursor-pointer justify-between">
+                  <span>Emerald</span>
+                  <input type="radio" name="theme" class="theme-controller" value="emerald" />
+                </label>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 min-h-[calc(100dvh-4rem)]">
+      <slot />
+    </main>
+  </body>
 </html>

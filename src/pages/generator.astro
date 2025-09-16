@@ -1,26 +1,40 @@
 ---
 import Layout from '../layouts/Layout.astro';
 ---
-
 <Layout>
-    <button><a href="/">Retour</a></button>
-    <section class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold">SVG Generator</h1>
-      <div class="badge badge-lg">Hugging Face</div>
-    </section>
+  <!-- Header local -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="breadcrumbs text-sm">
+      <ul>
+        <li><a href="/" class="link">Accueil</a></li>
+        <li>Générateur</li>
+      </ul>
+    </div>
+    <div class="badge badge-lg">Hugging Face</div>
+  </div>
 
-  <!-- zone 1 : prompt -->
+  <!-- Carte de saisie -->
   <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
     <div class="card-body gap-3">
+      <div class="flex items-center justify-between">
+        <h2 class="card-title">Entrer un prompt</h2>
+        <div class="join hidden sm:inline-flex">
+          <button class="btn btn-ghost btn-xs join-item ex" data-prompt="a red car">Ex: car</button>
+          <button class="btn btn-ghost btn-xs join-item ex" data-prompt="a cute robot head">robot</button>
+          <button class="btn btn-ghost btn-xs join-item ex" data-prompt="a blue rocket">rocket</button>
+        </div>
+      </div>
+
       <label class="form-control w-full">
         <div class="label">
           <span class="label-text">Prompt</span>
           <span class="label-text-alt">Décris l’objet à dessiner</span>
         </div>
-        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24" placeholder="a red car"></textarea>
+        <textarea id="user-prompt" class="textarea textarea-bordered min-h-28" placeholder="a red car"></textarea>
       </label>
 
       <div class="card-actions justify-end">
+        <button id="clear" class="btn btn-ghost">Effacer</button>
         <button id="generate-button" class="btn btn-primary">Générer</button>
       </div>
 
@@ -28,21 +42,23 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </div>
 
-  <!-- zones 2 & 3 : aperçu SVG + code SVG -->
+  <!-- Résultats -->
   <div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
+    <!-- Aperçu -->
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Aperçu</h2>
-        <div id="svg-container" class="min-h-64 rounded-box border border-base-300 grid place-items-center">
+        <div id="svg-container" class="min-h-72 rounded-box border border-base-300 grid place-items-center">
           <span class="opacity-60">Le SVG généré s’affichera ici</span>
         </div>
       </div>
     </div>
 
+    <!-- Code -->
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Code SVG</h2>
-        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
+        <pre class="mockup-code text-sm overflow-auto max-h-[520px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
         <div class="card-actions justify-end">
           <button id="copy" class="btn btn-secondary btn-sm">Copier</button>
         </div>
@@ -52,48 +68,50 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script type="module">
-  // utilitaires UI
-  const $ = (sel) => document.querySelector(sel);
+  // Helpers
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
   const btn = $('#generate-button');
+  const clearBtn = $('#clear');
   const out = $('#svg-output');
   const box = $('#svg-container');
   const alertBox = $('#alert');
   const copyBtn = $('#copy');
+  const promptEl = /** @type {HTMLTextAreaElement|null} */ ($('#user-prompt'));
 
-  function showAlert(type, text) {
+  const showAlert = (type, text) => {
     alertBox.className = `alert alert-${type} mb-2`;
     alertBox.textContent = text;
+  };
+
+  // Exemples rapides
+  $$('.ex').forEach(b => b.addEventListener('click', () => {
+    if (promptEl) promptEl.value = b.dataset.prompt || '';
+  }));
+
+  // Fetch endpoint
+  async function generateSVG(prompt) {
+    const res = await fetch('/api/generateSVG', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch { throw new Error(`Réponse non-JSON (probable 404/500): ${text.slice(0, 120)}…`); }
+    if (!res.ok) throw new Error(data.error || 'Erreur API');
+    return data.svg;
   }
-
-async function generateSVG(prompt) {
-  const res = await fetch('/api/generateSVG', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt }),
-  });
-
-  const text = await res.text(); // peut être JSON ou HTML (404)
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error(`Réponse non-JSON (probable 404): ${text.slice(0, 120)}…`);
-  }
-  if (!res.ok) throw new Error(data.error || 'Erreur API');
-  return data.svg;
-}
-
 
   async function handleSubmit() {
-    const promptEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('user-prompt'));
     const prompt = (promptEl?.value || '').trim();
     if (!prompt) {
       showAlert('warning', 'Écris un prompt avant de générer.');
       return;
     }
     alertBox.className = 'hidden';
-
-    // loading
     box.innerHTML = `<span class="loading loading-ring loading-lg"></span>`;
     out.textContent = '';
     btn.disabled = true;
@@ -109,7 +127,7 @@ async function generateSVG(prompt) {
       box.innerHTML = svg;
     } catch (e) {
       console.error(e);
-      showAlert('error', e.message || 'Erreur de génération');
+      showAlert('error', String(e?.message ?? 'Erreur de génération'));
       box.innerHTML = `<div class="opacity-60">Erreur…</div>`;
     } finally {
       btn.disabled = false;
@@ -117,6 +135,12 @@ async function generateSVG(prompt) {
   }
 
   btn?.addEventListener('click', handleSubmit);
+  clearBtn?.addEventListener('click', () => {
+    if (promptEl) promptEl.value = '';
+    out.textContent = '';
+    box.innerHTML = `<span class="opacity-60">Le SVG généré s’affichera ici</span>`;
+    alertBox.className = 'hidden';
+  });
 
   copyBtn?.addEventListener('click', async () => {
     try {
