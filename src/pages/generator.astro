@@ -3,10 +3,11 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
-  <section class="flex items-center justify-between mb-4">
-    <h1 class="text-2xl font-bold">SVG Generator</h1>
-    <div class="badge badge-lg">Hugging Face</div>
-  </section>
+    <button><a href="/">Retour</a></button>
+    <section class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold">SVG Generator</h1>
+      <div class="badge badge-lg">Hugging Face</div>
+    </section>
 
   <!-- zone 1 : prompt -->
   <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
@@ -64,16 +65,24 @@ import Layout from '../layouts/Layout.astro';
     alertBox.textContent = text;
   }
 
-  async function generateSVG(prompt) {
-    const res = await fetch('/api/generateSVG', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-    });
-    if (!res.ok) throw new Error((await res.json()).error || 'Erreur API');
-    const data = await res.json();
-    return data.svg;
+async function generateSVG(prompt) {
+  const res = await fetch('/api/generateSVG', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt }),
+  });
+
+  const text = await res.text(); // peut être JSON ou HTML (404)
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(`Réponse non-JSON (probable 404): ${text.slice(0, 120)}…`);
   }
+  if (!res.ok) throw new Error(data.error || 'Erreur API');
+  return data.svg;
+}
+
 
   async function handleSubmit() {
     const promptEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('user-prompt'));
