@@ -1,0 +1,32 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import pb from '../../utils/pb';
+import { Collections, type SvgRecord } from '../../utils/pocketbase-types';
+
+const list: SvgRecord[] = await pb
+  .collection(Collections.Svg)
+  .getFullList({ sort: '-created' });
+---
+
+<Layout>
+  <h1 class="text-2xl font-bold mb-4">Galerie</h1>
+
+  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {list.map((item) => (
+      <div class="card bg-base-100 shadow-xl border border-base-300">
+        <div class="card-body gap-4">
+          <h2 class="card-title">{item.title ?? '(sans titre)'}</h2>
+
+          <!-- IMPORTANT : pas de pb.files.getURL ici, on a déjà le code SVG -->
+          <div class="rounded-box bg-base-200 p-4 min-h-40">
+            <div set:html={item.code_svg}></div>
+          </div>
+
+          <div class="card-actions justify-end">
+            <a class="btn btn-primary btn-sm" href={`/gallery/${item.id}`}>Ouvrir</a>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</Layout>

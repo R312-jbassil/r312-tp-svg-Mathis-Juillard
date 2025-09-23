@@ -1,9 +1,9 @@
 // src/pages/api/generateSVG.js
 import { OpenAI } from 'openai';
 
-const HF_TOKEN = import.meta.env.HF_TOKEN;
-const HF_URL   = import.meta.env.HF_URL  || 'https://router.huggingface.co/v1';
-const HF_MODEL = import.meta.env.HF_MODEL || 'meta-llama/Llama-3.1-8B-Instruct';
+const OR_TOKEN = import.meta.env.OR_TOKEN;
+const OR_URL   = import.meta.env.OR_URL  || 'https://openrouter.ai/api/v1';
+const OR_MODEL = import.meta.env.OR_MODEL || 'openai/gpt-oss-20b:free';
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -11,38 +11,46 @@ const json = (obj, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
-export const GET = () => json({ ok: true, hint: 'Use POST' });
+export const GET = () => json({ ok: true, hint: 'POST only' });
 
 export const POST = async ({ request }) => {
   try {
-    if (!HF_TOKEN) return json({ error: 'HF_TOKEN manquant' }, 500);
+    if (!OR_TOKEN) return json({ error: 'OR_TOKEN manquant' }, 500);
 
-    const { prompt } = await request.json();
-    if (!prompt || typeof prompt !== 'string')
-      return json({ error: 'prompt manquant' }, 400);
+    const body = await request.json();
+    // Compat : accepte soit un tableau de messages [{role,content}], soit {prompt:"..."}
+    const messages = Array.isArray(body)
+      ? body
+      : (Array.isArray(body?.messages) ? body.messages
+         : (body?.prompt ? [{ role: 'user', content: body.prompt }] : []));
 
-    const client = new OpenAI({ baseURL: HF_URL, apiKey: HF_TOKEN });
+    const systemMessage = {
+      role: 'system',
+      content:
+        'You are an SVG code generator. Generate only raw SVG code for the following messages. ' +
+        'Make sure to include ids for each important part of the SVG.',
+    };
 
-    const chat = await client.chat.completions.create({
-      model: "meta-llama/Llama-3.1-8B-Instruct:novita",
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an SVG generation tool. Generate only the SVG code without any explanation.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
+    const client = new OpenAI({
+      baseURL: OR_URL,
+      apiKey : OR_TOKEN,
+    });
+
+    const resp = await client.chat.completions.create({
+      model: OR_MODEL,
+      messages: [systemMessage, ...messages],
+      temperature: 0.3,
       max_tokens: 2048,
     });
 
-    const message = chat.choices?.[0]?.message?.content || '';
-    const match = message.match(/<svg[\s\S]*?<\/svg>/i);
-    const svg = match ? match[0] : '';
+    const content = resp.choices?.[0]?.message?.content ?? '';
+    const match   = content.match(/<svg[\s\S]*?<\/svg>/i);
+    const svg     = match ? match[0] : '';
 
-    return json({ svg });
+    // On renvoie un "message" assistant pour coller au TP
+    return json({ svg: { role: 'assistant', content: svg } });
   } catch (e) {
     console.error('generateSVG error:', e);
-    return json({ error: 'Erreur génération' }, 500);
+    return json({ error: 'Erreur serveur generateSVG' }, 500);
   }
 };

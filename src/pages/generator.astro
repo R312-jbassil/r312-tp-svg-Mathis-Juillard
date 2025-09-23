@@ -2,38 +2,42 @@
 import Layout from '../layouts/Layout.astro';
 ---
 <Layout>
-  <div class="flex items-center justify-between mb-6">
-    <div class="breadcrumbs text-sm"><ul><li><a href="/" class="link">Accueil</a></li><li>Générateur</li></ul></div>
-    <div class="badge badge-lg">Hugging Face</div>
-  </div>
+  <section class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <a class="btn btn-ghost" href="/">← Accueil</a>
+      <h1 class="text-2xl font-bold">SVG Generator</h1>
+      <div class="badge badge-lg">OpenRouter</div>
+    </div>
+    <a class="btn btn-outline" href="/gallery">Galerie</a>
+  </section>
 
-  <!-- carte prompt -->
+  <!-- zone 1 : prompt -->
   <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
     <div class="card-body gap-3">
-      <h2 class="card-title">Entrer un prompt</h2>
       <label class="form-control w-full">
         <div class="label">
           <span class="label-text">Prompt</span>
           <span class="label-text-alt">Décris l’objet à dessiner</span>
         </div>
-        <textarea id="user-prompt" class="textarea textarea-bordered min-h-28" placeholder="a red car"></textarea>
+        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24" placeholder="a red car"></textarea>
       </label>
 
-      <div class="card-actions justify-end">
-        <button id="clear" class="btn btn-ghost">Effacer</button>
+      <div class="card-actions justify-end gap-2">
         <button id="generate-button" class="btn btn-primary">Générer</button>
+        <button id="edit-button" class="btn btn-secondary" disabled>Edit</button>
+        <button id="save-button" class="btn btn-accent" disabled>Sauvegarder</button>
       </div>
 
       <div id="alert" class="hidden"></div>
     </div>
   </div>
 
-  <!-- résultats -->
+  <!-- zones 2 & 3 : aperçu SVG + code SVG -->
   <div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Aperçu</h2>
-        <div id="svg-container" class="min-h-72 rounded-box border border-base-300 grid place-items-center">
+        <div id="svg-container" class="min-h-64 rounded-box border border-base-300 grid place-items-center">
           <span class="opacity-60">Le SVG généré s’affichera ici</span>
         </div>
       </div>
@@ -42,145 +46,140 @@ import Layout from '../layouts/Layout.astro';
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Code SVG</h2>
-        <pre class="mockup-code text-sm overflow-auto max-h-[520px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
-        <div class="card-actions justify-between">
-          <a href="/library" class="btn btn-ghost btn-sm">Bibliothèque</a>
-          <div class="join">
-            <button id="copy" class="btn btn-secondary btn-sm join-item">Copier</button>
-            <button id="save" class="btn btn-primary btn-sm join-item">Enregistrer</button>
-          </div>
-        </div>
+        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
       </div>
     </div>
   </div>
-
-  <!-- modal de sauvegarde -->
-  <dialog id="saveModal" class="modal">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg mb-2">Enregistrer le SVG</h3>
-      <form id="saveForm" class="space-y-3">
-        <label class="form-control">
-          <span class="label-text mb-1">Nom</span>
-          <input id="svg-title" type="text" class="input input-bordered" placeholder="Ex: Voiture rouge" required />
-        </label>
-        <div class="modal-action">
-          <button type="button" class="btn" onclick="saveModal.close()">Annuler</button>
-          <button type="submit" class="btn btn-primary">Enregistrer</button>
-        </div>
-      </form>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
-  </dialog>
 </Layout>
 
 <script type="module">
-  const $ = (s) => document.querySelector(s);
-  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  // ----- Etat -----
+  /** @type {{role:'user'|'assistant',content:string}[]} */
+  let promptList = [];
 
-  const btn = $('#generate-button');
-  const clearBtn = $('#clear');
+  // ----- UI helpers -----
+  const $ = (sel) => document.querySelector(sel);
+  const btnGenerate = $('#generate-button');
+  const btnEdit     = $('#edit-button');
+  const btnSave     = $('#save-button');
   const out = $('#svg-output');
   const box = $('#svg-container');
   const alertBox = $('#alert');
-  const copyBtn = $('#copy');
-  const saveBtn = $('#save');
-  const modal = /** @type {HTMLDialogElement|null} */ (document.getElementById('saveModal'));
-  const saveForm = /** @type {HTMLFormElement|null} */ (document.getElementById('saveForm'));
-  const titleInput = /** @type {HTMLInputElement|null} */ (document.getElementById('svg-title'));
   const promptEl = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('user-prompt'));
 
-  let lastSVG = ""; // stocke le dernier SVG généré
-
-  const showAlert = (type, text) => {
+  function showAlert(type, text) {
     alertBox.className = `alert alert-${type} mb-2`;
     alertBox.textContent = text;
-  };
+  }
 
-  async function generateSVG(prompt) {
+  async function callGenerate(messages) {
     const res = await fetch('/api/generateSVG', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify(messages),
     });
-    const txt = await res.text();
-    let data;
-    try { data = JSON.parse(txt); }
-    catch { throw new Error(`Réponse non-JSON: ${txt.slice(0,120)}…`); }
-    if (!res.ok) throw new Error(data.error || 'Erreur API');
-    return data.svg;
+    const data = await res.json(); // { svg: {role, content} } ou {error}
+    if (!res.ok) throw new Error(data?.error || 'Erreur API');
+    return data.svg; // {role:'assistant', content:'<svg...'}
   }
 
   async function handleSubmit() {
     const prompt = (promptEl?.value || '').trim();
     if (!prompt) return showAlert('warning', 'Écris un prompt avant de générer.');
 
-    alertBox.className = 'hidden';
+    showAlert('info', 'Génération en cours…');
+    btnGenerate.disabled = true; btnEdit.disabled = true; btnSave.disabled = true;
     box.innerHTML = `<span class="loading loading-ring loading-lg"></span>`;
     out.textContent = '';
-    btn.disabled = true;
 
     try {
-      const svg = await generateSVG(prompt);
-      if (!svg) {
-        showAlert('info', "Le modèle n'a pas renvoyé de balise <svg>.");
-        box.innerHTML = `<div class="opacity-60">Aucun SVG détecté</div>`;
-        lastSVG = "";
-        return;
-      }
-      out.textContent = svg;
-      box.innerHTML = svg;
-      lastSVG = svg;
+      // reset l’historique puis ajoute le prompt
+      promptList.length = 0;
+      promptList.push({ role: 'user', content: prompt });
+
+      const aiMsg = await callGenerate(promptList); // {role, content}
+      // sécurité : si jamais la réponse n'est pas strictement le SVG, on filtre
+      const match = aiMsg.content.match(/<svg[\s\S]*?<\/svg>/i);
+      aiMsg.content = match ? match[0] : '';
+
+      promptList.push(aiMsg);
+
+      out.textContent = aiMsg.content;
+      box.innerHTML   = aiMsg.content;
+      showAlert('success', 'OK ✅');
+
+      btnEdit.disabled = false;
+      btnSave.disabled = false;
     } catch (e) {
       console.error(e);
-      showAlert('error', String(e?.message ?? 'Erreur de génération'));
+      showAlert('error', e.message || 'Erreur de génération');
       box.innerHTML = `<div class="opacity-60">Erreur…</div>`;
-      lastSVG = "";
     } finally {
-      btn.disabled = false;
+      btnGenerate.disabled = false;
     }
   }
 
-  btn?.addEventListener('click', handleSubmit);
-  clearBtn?.addEventListener('click', () => {
-    if (promptEl) promptEl.value = '';
-    out.textContent = '';
-    box.innerHTML = `<span class="opacity-60">Le SVG généré s’affichera ici</span>`;
-    alertBox.className = 'hidden';
-    lastSVG = "";
-  });
+  async function handleEdit() {
+    const prompt = (promptEl?.value || '').trim();
+    if (!prompt) return showAlert('warning', 'Écris un prompt pour éditer le SVG.');
 
-  copyBtn?.addEventListener('click', async () => {
+    showAlert('info', 'Édition en cours…');
+    btnGenerate.disabled = true; btnEdit.disabled = true; btnSave.disabled = true;
+    box.innerHTML += `<span class="loading loading-ring loading-lg"></span>`;
+
     try {
-      await navigator.clipboard.writeText(out.textContent || '');
-      showAlert('success', 'SVG copié dans le presse-papiers ✅');
-    } catch {
-      showAlert('error', 'Impossible de copier');
+      promptList.push({ role: 'user', content: prompt });
+
+      const aiMsg = await callGenerate(promptList);
+      const match = aiMsg.content.match(/<svg[\s\S]*?<\/svg>/i);
+      aiMsg.content = match ? match[0] : '';
+
+      promptList.push(aiMsg);
+
+      out.textContent = aiMsg.content;
+      box.innerHTML   = aiMsg.content;
+      showAlert('success', 'Mise à jour ✅');
+
+      btnSave.disabled = false;
+    } catch (e) {
+      console.error(e);
+      showAlert('error', e.message || 'Erreur lors de l’édition');
+    } finally {
+      btnGenerate.disabled = false; btnEdit.disabled = false;
     }
-  });
+  }
 
-  saveBtn?.addEventListener('click', () => {
-    if (!lastSVG) return showAlert('warning', 'Génère un SVG avant d’enregistrer.');
-    titleInput && (titleInput.value = '');
-    modal?.showModal();
-  });
+  // ----- Sauvegarde dans PocketBase -----
+  async function saveSVG(params) {
+    const res = await fetch('/api/saveSVG', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    return await res.json();
+  }
 
-  saveForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const title = (titleInput?.value || '').trim();
-    if (!title || !lastSVG) return;
+  // events
+  btnGenerate?.addEventListener('click', handleSubmit);
+  btnEdit?.addEventListener('click', handleEdit);
 
-    try {
-      const res = await fetch('/api/saveSVG', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, svg: lastSVG }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur API');
-      modal?.close();
-      showAlert('success', 'Enregistré ✅  (voir Bibliothèque)');
-    } catch (err) {
-      showAlert('error', String(err?.message ?? err));
+  btnSave?.addEventListener('click', async () => {
+    const name = prompt('Nom de la création :');
+    if (!name) return;
+
+    const code = out.textContent || '<svg></svg>';
+
+    const payload = {
+      // ⚠️ si ton champ s’appelle "name" dans PocketBase, remplace "nom" par "name"
+      nom: name,
+      code_svg: code,
+      chat_history: JSON.stringify(promptList),
+    };
+    const result = await saveSVG(payload);
+    if (result?.success) {
+      showAlert('success', 'SVG sauvegardé ✅');
+    } else {
+      showAlert('error', result?.error || 'Erreur à la sauvegarde');
     }
   });
 </script>

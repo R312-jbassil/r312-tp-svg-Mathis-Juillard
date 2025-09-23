@@ -1,0 +1,148 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import pb from '../../utils/pb';
+import { Collections, type SvgRecord } from '../../utils/pocketbase-types';
+
+const id = Astro.params.id!;
+const svg = await pb.collection(Collections.Svg).getOne<SvgRecord>(id);
+
+// Normalise l'historique (peut être string ou array)
+let history: Array<{role: string; content: string}> = [];
+try {
+  history = Array.isArray(svg.chat_history) ? svg.chat_history : JSON.parse(svg.chat_history || '[]');
+} catch {
+  history = [];
+}
+---
+<Layout>
+  <section class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-3">
+      <a class="btn btn-ghost" href="/gallery">← Galerie</a>
+      <h1 class="text-2xl font-bold">{svg.nom || svg.name || 'Édition SVG'}</h1>
+    </div>
+  </section>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <!-- Aperçu -->
+    <div class="card bg-base-100 border border-base-300 shadow min-h-80">
+      <div class="card-body">
+        <div id="svg-preview" class="rounded-box border border-base-300 min-h-64" set:html={svg.code_svg}></div>
+      </div>
+    </div>
+
+    <!-- Chat / édition -->
+    <div class="card bg-base-100 border border-base-300 shadow relative">
+      <div class="card-body">
+        <h2 class="card-title">Conversation</h2>
+        <div id="chat-history" class="flex flex-col gap-4 w-full mb-20 overflow-y-auto">
+          {
+            (Array.isArray(history) && history.length > 0) ? (
+              history.map((msg) => (
+                <div class={`chat ${msg.role === 'user' ? 'chat-start' : 'chat-end'}`}>
+                  <div class={`chat-bubble ${msg.role === 'user' ? 'bg-primary text-primary-content' : 'bg-secondary text-secondary-content'}`}>
+                    <pre>{msg.content}</pre>
+                  </div>
+                  <div class="chat-footer opacity-60 text-xs mt-1">{msg.role}</div>
+                </div>
+              ))
+            ) : (
+              <span class="text-error">Aucun historique.</span>
+            )
+          }
+        </div>
+      </div>
+
+      <!-- Formulaire d’édition -->
+      <form id="input-prompt-form" class="flex flex-col gap-2 w-full absolute bottom-0 left-0 right-0 bg-base-300 p-4" method="POST" autocomplete="off">
+        <input type="hidden" name="history" value={JSON.stringify(history)} />
+        <input type="hidden" name="id" value={svg.id} />
+        <div class="flex items-center gap-2">
+          <input id="prompt-input" name="editPrompt" type="text" class="input input-bordered flex-grow" placeholder="Enter a prompt to edit the SVG..." />
+          <button class="btn btn-primary" type="submit">Edit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  //@ts-nocheck
+  const form = document.getElementById('input-prompt-form');
+  const svgPreview = document.getElementById('svg-preview');
+  const chatHistory = document.getElementById('chat-history');
+
+  async function generateSVG(messages) {
+    const res = await fetch('/api/generateSVG', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(messages),
+    });
+    const data = await res.json(); // { svg: {role, content} }
+    if (!res.ok) throw new Error(data?.error || 'Erreur API');
+    return data.svg; // {role, content}
+  }
+
+  async function update(updatedData) {
+    const response = await fetch('/api/updateSVG', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedData),
+    });
+    return response;
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    // prompt utilisateur
+    const prompt = { role: 'user', content: formData.get('editPrompt') || '' };
+    if (!prompt.content) return;
+
+    // récupère l'historique
+    let history = [];
+    try { history = JSON.parse(formData.get('history') || '[]'); } catch { history = []; }
+    history.push(prompt);
+
+    // reset champ + spinner
+    document.getElementById('prompt-input').value = '';
+    svgPreview.innerHTML += `<span class="loading loading-ring loading-xl"></span>`;
+
+    // affiche le prompt dans le chat
+    chatHistory.innerHTML += `
+      <div class="chat chat-start">
+        <div class="chat-bubble bg-primary text-primary-content"><pre>${prompt.content}</pre></div>
+        <div class="chat-footer opacity-60 text-xs mt-1">user</div>
+      </div>`;
+
+    // appel IA
+    let aiMsg = await generateSVG(history); // {role:'assistant', content:'<svg...'}
+    const match = aiMsg.content.match(/<svg[\\s\\S]*?<\\/svg>/i);
+    aiMsg.content = match ? match[0] : '';
+    history.push(aiMsg);
+
+    // mise à jour UI
+    svgPreview.innerHTML = aiMsg.content;
+    chatHistory.innerHTML += `
+      <div class="chat chat-end">
+        <div class="chat-bubble bg-secondary text-secondary-content"><pre>${aiMsg.content}</pre></div>
+        <div class="chat-footer opacity-60 text-xs mt-1">assistant</div>
+      </div>`;
+
+    // sauvegarde des modifs dans PB
+    const resp = await update({
+      id: formData.get('id'),
+      code_svg: aiMsg.content,
+      chat_history: JSON.stringify(history),
+    });
+    const data = await resp.json();
+    if (!data.success) {
+      alert('Failed to update SVG: ' + (data.error || 'unknown'));
+    }
+
+    // met à jour le champ hidden history pour la prochaine édition
+    form.querySelector('input[name="history"]').value = JSON.stringify(history);
+  });
+</script>

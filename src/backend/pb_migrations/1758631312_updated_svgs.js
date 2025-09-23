@@ -4,7 +4,7 @@ migrate((app) => {
 
   // update collection data
   unmarshal({
-    "name": "svgs"
+    "name": "Svg"
   }, collection)
 
   return app.save(collection)
@@ -13,7 +13,7 @@ migrate((app) => {
 
   // update collection data
   unmarshal({
-    "name": "svg"
+    "name": "svgs"
   }, collection)
 
   return app.save(collection)

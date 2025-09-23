@@ -1,24 +1,32 @@
+// src/pages/api/saveSVG.js
 import pb from '../../utils/pb';
+import { Collections } from '../../utils/pocketbase-types';
 
-const COLLECTION = import.meta.env.PB_SVG_COLLECTION ?? 'svgs'; // ← change si besoin
-
-const json = (obj, status = 200) =>
-  new Response(JSON.stringify(obj), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-export const POST = async ({ request }) => {
+export async function POST({ request }) {
   try {
-    const { title, svg } = await request.json();
-    if (!title || !svg) return json({ error: 'title et svg requis' }, 400);
+    const data = await request.json();
 
-    // Assure-toi que ta collection possède les champs: title (text) et code (text/textarea)
-    const record = await pb.collection(COLLECTION).create({ title, code: svg });
+    // Normalisation des champs (adapte "title" si ton champ s'appelle autrement)
+    const payload = {
+      title: data.title ?? data.nom ?? 'Sans titre',
+      code_svg: data.code_svg ?? '',
+      // chat_history peut arriver en string => on parse
+      chat_history:
+        typeof data.chat_history === 'string'
+          ? JSON.parse(data.chat_history || '[]')
+          : (data.chat_history ?? []),
+    };
 
-    return json({ id: record.id });
-  } catch (e) {
-    console.error('saveSVG error:', e);
-    return json({ error: 'Erreur enregistrement' }, 500);
+    const rec = await pb.collection(Collections.Svg).create(payload);
+
+    return new Response(JSON.stringify({ success: true, id: rec.id }), {
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (err) {
+    console.error('Error saving SVG:', err);
+    return new Response(
+      JSON.stringify({ success: false, error: err?.message || 'save error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-};
+}
