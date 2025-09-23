@@ -43,13 +43,19 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <div class="card bg-base-100 shadow-xl border border-base-300">
-      <div class="card-body">
-        <h2 class="card-title">Code SVG</h2>
-        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output" class="whitespace-pre-wrap break-words"></code></pre>
-      </div>
+<div class="card bg-base-100 shadow-xl border border-base-300">
+  <div class="card-body">
+    <div class="flex items-center justify-between">
+      <h2 class="card-title">Code SVG</h2>
+      <button id="copy-svg" class="btn btn-outline btn-sm">Copier le SVG</button>
     </div>
+
+    <pre class="mockup-code text-sm overflow-auto max-h-[480px]">
+      <code id="svg-output" class="whitespace-pre-wrap break-words"></code>
+    </pre>
   </div>
+</div>
+
 </Layout>
 
 <script type="module">
@@ -93,12 +99,10 @@ import Layout from '../layouts/Layout.astro';
     out.textContent = '';
 
     try {
-      // reset l’historique puis ajoute le prompt
       promptList.length = 0;
       promptList.push({ role: 'user', content: prompt });
 
       const aiMsg = await callGenerate(promptList); // {role, content}
-      // sécurité : si jamais la réponse n'est pas strictement le SVG, on filtre
       const match = aiMsg.content.match(/<svg[\s\S]*?<\/svg>/i);
       aiMsg.content = match ? match[0] : '';
 
@@ -149,7 +153,6 @@ import Layout from '../layouts/Layout.astro';
     }
   }
 
-  // ----- Sauvegarde dans PocketBase -----
   async function saveSVG(params) {
     const res = await fetch('/api/saveSVG', {
       method: 'POST',
@@ -159,7 +162,6 @@ import Layout from '../layouts/Layout.astro';
     return await res.json();
   }
 
-  // events
   btnGenerate?.addEventListener('click', handleSubmit);
   btnEdit?.addEventListener('click', handleEdit);
 
@@ -170,7 +172,6 @@ import Layout from '../layouts/Layout.astro';
     const code = out.textContent || '<svg></svg>';
 
     const payload = {
-      // ⚠️ si ton champ s’appelle "name" dans PocketBase, remplace "nom" par "name"
       nom: name,
       code_svg: code,
       chat_history: JSON.stringify(promptList),
@@ -182,4 +183,25 @@ import Layout from '../layouts/Layout.astro';
       showAlert('error', result?.error || 'Erreur à la sauvegarde');
     }
   });
+  const copySvgBtn = document.getElementById('copy-svg');
+
+async function copySVG() {
+  const code = (out?.textContent || '').trim() || (box?.innerHTML || '').trim();
+  if (!code) {
+    showAlert('info', 'Rien à copier pour le moment.');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(code);
+    showAlert('success', 'SVG copié dans le presse-papiers ✅');
+    copySvgBtn?.classList.add('btn-success');
+    setTimeout(() => copySvgBtn?.classList.remove('btn-success'), 900);
+  } catch (e) {
+    console.error(e);
+    showAlert('error', "Impossible de copier le SVG");
+  }
+}
+
+copySvgBtn?.addEventListener('click', copySVG);
+
 </script>

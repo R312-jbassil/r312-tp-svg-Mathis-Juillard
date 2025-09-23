@@ -17,7 +17,6 @@ const list: SvgRecord[] = await pb
         <div class="card-body gap-4">
           <h2 class="card-title">{item.title ?? '(sans titre)'}</h2>
 
-          <!-- IMPORTANT : pas de pb.files.getURL ici, on a déjà le code SVG -->
           <div class="rounded-box bg-base-200 p-4 min-h-40">
             <div set:html={item.code_svg}></div>
           </div>
