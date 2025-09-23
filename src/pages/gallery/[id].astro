@@ -8,7 +8,6 @@ import { Collections, type SvgRecord } from "../../utils/pocketbase-types";
 const id = Astro.params.id!;
 const svg = await pb.collection(Collections.Svg).getOne<SvgRecord>(id);
 
-// L'historique peut être un JSON ou null
 const history =
   Array.isArray(svg.chat_history)
     ? svg.chat_history
@@ -17,7 +16,6 @@ const history =
 
 <Layout>
   <section class="grid gap-6 lg:grid-cols-2">
-    <!-- Aperçu SVG -->
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Aperçu</h2>
@@ -27,28 +25,33 @@ const history =
       </div>
     </div>
 
-    <!-- Chat + form -->
     <div class="card bg-base-100 shadow-xl border border-base-300 relative">
-      <div class="card-body">
-        <h2 class="card-title">Conversation</h2>
-
-        <div id="chat-history" class="flex flex-col gap-4 w-full mb-20 overflow-y-auto flex-grow">
-          {
-            history.length
-              ? history.map((msg: { role: string; content: string }) => (
-                  <div class={`chat ${msg.role === 'user' ? 'chat-start' : 'chat-end'}`}>
-                    <div class={`chat-bubble ${msg.role === 'user' ? 'bg-primary text-primary-content' : 'bg-secondary text-secondary-content'}`}>
-                      <pre>{msg.content}</pre>
-                    </div>
-                    <div class="chat-footer opacity-60 text-xs mt-1">{msg.role}</div>
-                  </div>
-                ))
-              : <span class="text-error">Aucun historique.</span>
-          }
-        </div>
+<div class="card-body">
+  <h2 class="card-title">Conversation</h2>
+  
+  <div id="chat-history" class="overflow-y-auto max-h-96 mb-16">
+    {history.length > 0 
+        ? history.map((msg) => (
+          <div class={`chat ${msg.role === 'user' ? 'chat-start' : 'chat-end'}`}>
+            <div
+              class={`chat-bubble ${
+                msg.role === 'user'
+                  ? 'bg-primary text-primary-content'
+                  : 'bg-secondary text-secondary-content'
+              } max-w-[min(90vw,68ch)] p-3`}
+            >
+              <pre class="whitespace-pre-wrap break-words break-all text-xs md:text-sm leading-5 max-w-full overflow-x-auto select-text">
+                {msg.content}
+              </pre>
+            </div>
+            <div class="chat-footer opacity-60 text-xs mt-1">{msg.role}</div>
+          </div>
+          ))
+        : <span class="text-error">Aucun historique.</span>
+    }
+  </div>
       </div>
 
-      <!-- Formulaire d'édition -->
       <form id="input-prompt-form"
             class="flex flex-col gap-2 w-full absolute bottom-0 left-0 right-0 bg-base-300 p-4"
             autocomplete="off">
@@ -71,7 +74,6 @@ const history =
   const svgPreview = document.getElementById('svg-preview');
   const chatHistory = document.getElementById('chat-history');
 
-  // Utilitaire pour éviter l'injection HTML dans les bulles
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -85,7 +87,6 @@ const history =
       body: JSON.stringify(messages),
     });
     const data = await res.json();
-    // l’endpoint TD4 peut renvoyer { svg: { role, content } } ou { svg: '...' }
     return data.svg?.content ?? data.svg ?? '';
   }
 
@@ -102,7 +103,6 @@ const history =
 
     const id = String(fd.get('id'));
 
-    // 1) Ajoute le message user en UI
     history.push({ role: 'user', content: userText });
     const userBubble = document.createElement('div');
     userBubble.className = 'chat chat-start';
@@ -112,15 +112,12 @@ const history =
       '</pre></div><div class="chat-footer opacity-60 text-xs mt-1">user</div>';
     chatHistory.appendChild(userBubble);
 
-    // 2) Loading
     svgPreview.insertAdjacentHTML('beforeend', '<span class="loading loading-ring loading-xl"></span>');
 
-    // 3) Appel API
     let ai = await generateSVG(history);
     const match = String(ai).match(/<svg[\s\S]*?<\/svg>/i);
     const svgCode = match ? match[0] : '';
 
-    // 4) Ajoute la réponse assistant + rendu
     history.push({ role: 'assistant', content: svgCode });
     svgPreview.innerHTML = svgCode;
 
@@ -132,7 +129,6 @@ const history =
       '</pre></div><div class="chat-footer opacity-60 text-xs mt-1">assistant</div>';
     chatHistory.appendChild(aiBubble);
 
-    // 5) Persistance PocketBase
     try {
       const resp = await fetch('/api/updateSVG', {
         method: 'POST',
@@ -145,7 +141,6 @@ const history =
       console.error('updateSVG error', err);
     }
 
-    // 6) Met à jour le hidden + reset
     form.querySelector('input[name="history"]').value = JSON.stringify(history);
     form.reset();
   });
