@@ -27,33 +27,18 @@ import "../styles/global.css";
           </ul>
         </div>
 
-        <div class="navbar-end">
-          <!-- Theme controller DaisyUI -->
-          <div class="dropdown dropdown-end">
-            <label tabindex="0" class="btn btn-ghost">Thème</label>
-            <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52">
-              <li>
-                <label class="label cursor-pointer justify-between">
-                  <span>Light</span>
-                  <input type="radio" name="theme" class="theme-controller" value="light" />
-                </label>
-              </li>
-              <li>
-                <label class="label cursor-pointer justify-between">
-                  <span>Dark</span>
-                  <input type="radio" name="theme" class="theme-controller" value="dark" />
-                </label>
-              </li>
-              <li>
-                <label class="label cursor-pointer justify-between">
-                  <span>Emerald</span>
-                  <input type="radio" name="theme" class="theme-controller" value="emerald" />
-                </label>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <div class="navbar bg-base-100/80 backdrop-blur border-b border-base-300 sticky top-0 z-50">
+    <div class="navbar-center">
+      <span class="mr-2 font-medium">Thème</span>
+      <div class="join relative z-50">
+        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Light"  value="light" />
+        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Dark"   value="dark" />
+        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Bouncy" value="bouncyshark" />
       </div>
+    </div>
+  </div>
+</header>
+
     </header>
 
     <main class="container mx-auto px-4 py-8 min-h-[calc(100dvh-4rem)]">
