@@ -6,6 +6,12 @@ export const ui = {
       title: 'Welcome to SVG Generator',
       description: 'Create and render SVGs from prompts.',
       button: 'Go to SVG Generator',
+
+    },
+    theme: {
+      title: 'Theme',
+      light: 'Light',
+      dark: 'Dark',
     },
     generator: {
       title: 'SVG Generator',
@@ -31,6 +37,13 @@ export const ui = {
       title: 'Bienvenue sur le générateur SVG',
       description: 'Créez et affichez des SVG à partir d’invites.',
       button: 'Aller au générateur SVG',
+      
+    },
+    theme: {
+      title: 'Thème',
+      light: 'Clair',
+      dark: 'Sombre',
+
     },
     generator: {
       title: 'Générateur SVG',
