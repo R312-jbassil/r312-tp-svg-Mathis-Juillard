@@ -25,8 +25,9 @@ const locale = (Astro.locals.lang ?? 'en');
       <div class="card-actions justify-end gap-2">
         <button id="generate-button" class="btn btn-primary">{ui[locale].generator.generateButton}</button>
         <button id="edit-button" class="btn">{ui[locale].generator.editButton}</button>
-        <button id="copy" class="btn btn-secondary btn-outline">{ui[locale].generator.copyButton}</button>
-        <button id="save-button" class="btn btn-accent">{ui[locale].generator.saveButton}</button>
+<button id="copy-svg" class="btn btn-secondary btn-outline">
+  {ui[locale].generator.copyButton}
+</button>        <button id="save-button" class="btn btn-accent">{ui[locale].generator.saveButton}</button>
       </div>
 
       <div id="alert" class="hidden"></div>
@@ -55,7 +56,6 @@ const locale = (Astro.locals.lang ?? 'en');
   </div>
 </Layout>
 
-<!-- ⚠️ garde ton <script type="module"> actuel (génération, edition, copie…) -->
 
 
 <script type="module">
