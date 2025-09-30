@@ -1,0 +1,50 @@
+// src/i18n/ui.js
+export const ui = {
+  en: {
+    nav: { home: 'Home', generator: 'Generator', gallery: 'Gallery', language: 'Language' },
+    index: {
+      title: 'Welcome to SVG Generator',
+      description: 'Create and render SVGs from prompts.',
+      button: 'Go to SVG Generator',
+    },
+    generator: {
+      title: 'SVG Generator',
+      promptLabel: 'Enter your prompt:',
+      generateButton: 'Generate SVG',
+      editButton: 'Edit',
+      copyButton: 'Copy SVG',
+      saveButton: 'Save',
+      contentPlaceholder: 'The SVG preview will appear here',
+      codePlaceholder: 'The SVG code will appear here',
+    },
+    gallery: {
+      title: 'SVG Gallery',
+      viewDetails: 'View',
+      empty: 'No SVGs saved yet.',
+    },
+  },
+
+  fr: {
+    nav: { home: 'Accueil', generator: 'Générateur', gallery: 'Galerie', language: 'Langue' },
+    index: {
+      title: 'Bienvenue sur le générateur SVG',
+      description: 'Créez et affichez des SVG à partir d’invites.',
+      button: 'Aller au générateur SVG',
+    },
+    generator: {
+      title: 'Générateur SVG',
+      promptLabel: 'Entrez votre prompt :',
+      generateButton: 'Générer le SVG',
+      editButton: 'Éditer',
+      copyButton: 'Copier le SVG',
+      saveButton: 'Sauvegarder',
+      contentPlaceholder: 'L’aperçu SVG s’affichera ici',
+      codePlaceholder: 'Le code SVG s’affichera ici',
+    },
+    gallery: {
+      title: 'Galerie SVG',
+      viewDetails: 'Ouvrir',
+      empty: 'Aucun SVG sauvegardé.',
+    },
+  },
+};
