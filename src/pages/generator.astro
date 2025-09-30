@@ -1,14 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { ui } from '../i18n/ui.js';
+
+const locale = (Astro.locals.lang ?? 'en');
 ---
-<Layout>
+
+<Layout title={ui[locale].generator.title}>
   <section class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-3">
-      <a class="btn btn-ghost" href="/">← Accueil</a>
-      <h1 class="text-2xl font-bold">SVG Generator</h1>
-      <div class="badge badge-lg">OpenRouter</div>
-    </div>
-    <a class="btn btn-outline" href="/gallery">Galerie</a>
+    <h1 class="text-2xl font-bold">{ui[locale].generator.title}</h1>
+    <div class="badge badge-lg">OpenRouter</div>
   </section>
 
   <!-- zone 1 : prompt -->
@@ -16,47 +16,47 @@ import Layout from '../layouts/Layout.astro';
     <div class="card-body gap-3">
       <label class="form-control w-full">
         <div class="label">
-          <span class="label-text">Prompt</span>
-          <span class="label-text-alt">Décris l’objet à dessiner</span>
+          <span class="label-text">{ui[locale].generator.promptLabel}</span>
         </div>
-        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24" placeholder="a red car"></textarea>
+        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24"
+          placeholder="a red car"></textarea>
       </label>
 
       <div class="card-actions justify-end gap-2">
-        <button id="generate-button" class="btn btn-primary">Générer</button>
-        <button id="edit-button" class="btn btn-secondary" disabled>Edit</button>
-        <button id="save-button" class="btn btn-accent" disabled>Sauvegarder</button>
+        <button id="generate-button" class="btn btn-primary">{ui[locale].generator.generateButton}</button>
+        <button id="edit-button" class="btn">{ui[locale].generator.editButton}</button>
+        <button id="copy" class="btn btn-secondary btn-outline">{ui[locale].generator.copyButton}</button>
+        <button id="save-button" class="btn btn-accent">{ui[locale].generator.saveButton}</button>
       </div>
 
       <div id="alert" class="hidden"></div>
     </div>
   </div>
 
-  <!-- zones 2 & 3 : aperçu SVG + code SVG -->
+  <!-- zones 2 & 3 -->
   <div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
-        <h2 class="card-title">Aperçu</h2>
-        <div id="svg-container" class="min-h-64 rounded-box border border-base-300 grid place-items-center">
-          <span class="opacity-60">Le SVG généré s’affichera ici</span>
+        <h2 class="card-title">Preview</h2>
+        <div id="svg-container"
+             class="min-h-64 rounded-box border border-base-300 grid place-items-center">
+          <span class="opacity-60">{ui[locale].generator.contentPlaceholder}</span>
         </div>
       </div>
     </div>
 
-<div class="card bg-base-100 shadow-xl border border-base-300">
-  <div class="card-body">
-    <div class="flex items-center justify-between">
-      <h2 class="card-title">Code SVG</h2>
-      <button id="copy-svg" class="btn btn-outline btn-sm">Copier le SVG</button>
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title">Code SVG</h2>
+        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output"
+             class="whitespace-pre-wrap break-words">{ui[locale].generator.codePlaceholder}</code></pre>
+      </div>
     </div>
-
-    <pre class="mockup-code text-sm overflow-auto max-h-[480px]">
-      <code id="svg-output" class="whitespace-pre-wrap break-words"></code>
-    </pre>
   </div>
-</div>
-
 </Layout>
+
+<!-- ⚠️ garde ton <script type="module"> actuel (génération, edition, copie…) -->
+
 
 <script type="module">
   // ----- Etat -----

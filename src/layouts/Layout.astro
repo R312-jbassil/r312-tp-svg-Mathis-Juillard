@@ -1,46 +1,52 @@
 ---
 import "../styles/global.css";
+import { ui } from "../i18n/ui.js";
+
+const locale = Astro.locals.lang ?? 'en';
+const title = Astro.props?.title ?? 'App';
 ---
+
 <!doctype html>
-<html lang="fr" class="h-full">
+<html lang={locale} data-theme="light" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <title>SVG Generator</title>
+    <title>{title}</title>
   </head>
-
-  <body class="h-full bg-base-200">
-    <header class="navbar bg-base-100/80 backdrop-blur border-b border-base-300">
-      <div class="container mx-auto px-4">
+  <body class="h-full">
+    <!-- Barre du haut (ex.: thème + langue + nav) -->
+    <header class="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50">
+      <div class="container mx-auto px-4 gap-4">
         <div class="navbar-start">
-          <a href="/" class="btn btn-ghost text-xl">SVG<span class="text-primary">Factory</span></a>
+          <a href="/" class="btn btn-ghost text-xl">SVG<span class="text-primary">Gen</span></a>
         </div>
 
-        <div class="navbar-center hidden md:flex">
-          <ul class="menu menu-horizontal gap-1">
-            <li><a href="/" class="btn btn-ghost btn-sm">Accueil</a></li>
-            <li><a href="/generator" class="btn btn-ghost btn-sm">Générateur</a></li>
-            <li><a href="/gallery" class="btn btn-ghost btn-sm">Galerie</a></li>
-          </ul>
+        <div class="navbar-center gap-2">
+          <a class="btn btn-ghost" href="/">{ui[locale].nav.home}</a>
+          <a class="btn btn-ghost" href="/generator">{ui[locale].nav.generator}</a>
+          <a class="btn btn-ghost" href="/gallery">{ui[locale].nav.gallery}</a>
         </div>
 
-        <div class="navbar bg-base-100/80 backdrop-blur border-b border-base-300 sticky top-0 z-50">
-    <div class="navbar-center">
-      <span class="mr-2 font-medium">Thème</span>
-      <div class="join relative z-50">
-        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Light"  value="light" />
-        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Dark"   value="dark" />
-        <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Bouncy" value="bouncyshark" />
+        <div class="navbar-end">
+          <!-- Sélecteur de langue : POST sur la même page -->
+          <form method="POST" action={Astro.url.pathname} class="z-50">
+            <select
+              name="language"
+              class="select select-bordered select-sm"
+              onchange="this.form.submit()"
+            >
+              <option disabled selected>{ui[locale].nav.language}</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+            </select>
+          </form>
+        </div>
       </div>
-    </div>
-  </div>
-</header>
-
     </header>
 
-    <main class="container mx-auto px-4 py-8 min-h-[calc(100dvh-4rem)]">
+    <main class="container mx-auto px-4 py-6 min-h-[calc(100dvh-4rem)]">
       <slot />
     </main>
   </body>
