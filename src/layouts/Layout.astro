@@ -1,9 +1,7 @@
 ---
 import "../styles/global.css";
-import { ui } from "../i18n/ui.js";
-
-const locale = Astro.locals.lang ?? 'en';
-const title = Astro.props?.title ?? 'App';
+import {ui} from "../i18n/ui.js";
+const locale = Astro.props.locale || 'fr';
 ---
 <!doctype html>
 <html lang="fr" class="h-full">
@@ -28,17 +26,7 @@ const title = Astro.props?.title ?? 'App';
             <li><a href="/generator" class="btn btn-ghost btn-sm">Générateur</a></li>
             <li><a href="/gallery" class="btn btn-ghost btn-sm">Galerie</a></li>
           </ul>
-        
         </div>
-             <select
-              name="language"
-              class="select select-bordered select-sm"
-              onchange="this.form.submit()"
-            >
-              <option disabled selected>{ui[locale].nav.language}</option>
-              <option value="en">English</option>
-              <option value="fr">Français</option>
-            </select>
 
         <div class="navbar bg-base-100/80 backdrop-blur border-b border-base-300 sticky top-0 z-50">
     <div class="navbar-center">
@@ -47,6 +35,17 @@ const title = Astro.props?.title ?? 'App';
         <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Light"  value="light" />
         <input class="btn btn-sm join-item theme-controller" type="radio" name="theme" aria-label="Dark"   value="dark" />
       </div>
+
+<form method="POST" action={Astro.url.pathname} class="inline-block">
+  <label class="label mr-2">{ui[locale].nav.language}</label>
+  <select name="language" class="select select-sm" onchange="this.form.submit()">
+    <option disabled selected>{ui[locale].nav.language}</option>
+    <option value="en">English</option>
+    <option value="fr">Français</option>
+  </select>
+</form>
+
+
     </div>
   </div>
 </header>
