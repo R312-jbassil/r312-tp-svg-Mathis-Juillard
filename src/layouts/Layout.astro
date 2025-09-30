@@ -1,9 +1,7 @@
 ---
-// src/layouts/Layout.astro
 import "../styles/global.css";
 import { ui } from "../i18n/ui.js";
 
-// ✅ Une seule source de vérité : la locale du middleware
 const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
 ---
 
@@ -18,7 +16,6 @@ const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
   </head>
 
   <body class="h-full">
-    <!-- Header / Nav -->
     <header class="navbar bg-base-200 sticky top-0 z-50">
       <div class="flex-1 gap-2">
         <a href="/" class="btn btn-ghost text-lg">{ui[locale].nav.home}</a>
@@ -27,7 +24,6 @@ const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
       </div>
 
       <div class="flex items-center gap-3">
-        <!-- Sélecteur de thème (libellés traduits) -->
         <details class="dropdown dropdown-end">
           <summary class="btn btn-ghost">{ui[locale].nav.theme ?? "Theme"}</summary>
           <ul class="menu dropdown-content bg-base-200 rounded-box shadow z-[60] mt-3 w-40 p-2">
@@ -36,7 +32,6 @@ const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
           </ul>
         </details>
 
-        <!-- Sélecteur de langue -->
         <form method="POST" action={Astro.url.pathname} class="inline-block">
           <select name="language" class="select select-sm" onchange="this.form.submit()">
             <option disabled selected>{ui[locale].nav.language}</option>
@@ -56,7 +51,6 @@ const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
     </main>
 
     <script>
-      // petit switcher de thème (DaisyUI ou data-theme)
       document.addEventListener('click', (e) => {
         const t = /** @type {HTMLElement} */(e.target);
         const btn = t?.closest?.('[data-set-theme]');

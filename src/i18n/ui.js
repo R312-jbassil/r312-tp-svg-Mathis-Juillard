@@ -16,6 +16,7 @@ export const ui = {
       saveButton: 'Save',
       contentPlaceholder: 'The SVG preview will appear here',
       codePlaceholder: 'The SVG code will appear here',
+      preview: 'Preview',
     },
     gallery: {
       title: 'SVG Gallery',
@@ -40,6 +41,7 @@ export const ui = {
       saveButton: 'Sauvegarder',
       contentPlaceholder: 'L’aperçu SVG s’affichera ici',
       codePlaceholder: 'Le code SVG s’affichera ici',
+      preview: 'Aperçu',
     },
     gallery: {
       title: 'Galerie SVG',
