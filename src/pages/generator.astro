@@ -18,16 +18,14 @@ const locale = (Astro.locals.lang ?? 'en');
         <div class="label">
           <span class="label-text">{ui[locale].generator.promptLabel}</span>
         </div>
-        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24"
-          placeholder="a red car"></textarea>
+        <textarea id="user-prompt" class="textarea textarea-bordered min-h-24" placeholder="a red car"></textarea>
       </label>
 
       <div class="card-actions justify-end gap-2">
         <button id="generate-button" class="btn btn-primary">{ui[locale].generator.generateButton}</button>
         <button id="edit-button" class="btn">{ui[locale].generator.editButton}</button>
-<button id="copy-svg" class="btn btn-secondary btn-outline">
-  {ui[locale].generator.copyButton}
-</button>        <button id="save-button" class="btn btn-accent">{ui[locale].generator.saveButton}</button>
+        <button id="copy-svg" class="btn btn-secondary btn-outline">{ui[locale].generator.copyButton}</button>
+        <button id="save-button" class="btn btn-accent">{ui[locale].generator.saveButton}</button>
       </div>
 
       <div id="alert" class="hidden"></div>
@@ -38,9 +36,8 @@ const locale = (Astro.locals.lang ?? 'en');
   <div class="grid gap-6 grid-cols-1 lg:grid-cols-2">
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
-<h2 class="card-title">{ui[locale].generator.preview}</h2>
-        <div id="svg-container"
-             class="min-h-64 rounded-box border border-base-300 grid place-items-center">
+        <h2 class="card-title">{ui[locale].generator.preview}</h2>
+        <div id="svg-container" class="min-h-64 rounded-box border border-base-300 grid place-items-center">
           <span class="opacity-60">{ui[locale].generator.contentPlaceholder}</span>
         </div>
       </div>
@@ -49,14 +46,13 @@ const locale = (Astro.locals.lang ?? 'en');
     <div class="card bg-base-100 shadow-xl border border-base-300">
       <div class="card-body">
         <h2 class="card-title">Code SVG</h2>
-        <pre class="mockup-code text-sm overflow-auto max-h-[480px]"><code id="svg-output"
-             class="whitespace-pre-wrap break-words">{ui[locale].generator.codePlaceholder}</code></pre>
+        <pre class="mockup-code text-sm overflow-auto max-h-[480px]">
+<code id="svg-output" class="whitespace-pre-wrap break-words">{ui[locale].generator.codePlaceholder}</code>
+        </pre>
       </div>
     </div>
   </div>
 </Layout>
-
-
 
 <script type="module">
   // ----- Etat -----
@@ -157,6 +153,7 @@ const locale = (Astro.locals.lang ?? 'en');
     const res = await fetch('/api/saveSVG', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',                 // ⬅️ envoie le cookie d’auth
       body: JSON.stringify(params),
     });
     return await res.json();
@@ -165,6 +162,7 @@ const locale = (Astro.locals.lang ?? 'en');
   btnGenerate?.addEventListener('click', handleSubmit);
   btnEdit?.addEventListener('click', handleEdit);
 
+  // ------ SAVE (corrigé: title + credentials) ------
   btnSave?.addEventListener('click', async () => {
     const name = prompt('Nom de la création :');
     if (!name) return;
@@ -172,36 +170,39 @@ const locale = (Astro.locals.lang ?? 'en');
     const code = out.textContent || '<svg></svg>';
 
     const payload = {
-      nom: name,
+      title: name,                            // ⬅️ la bonne clé pour PB
       code_svg: code,
       chat_history: JSON.stringify(promptList),
     };
     const result = await saveSVG(payload);
     if (result?.success) {
       showAlert('success', 'SVG sauvegardé ✅');
+      // Option: rediriger
+      // window.location.href = `/gallery/${result.id}`;
     } else {
       showAlert('error', result?.error || 'Erreur à la sauvegarde');
     }
   });
+
+  // ------ COPY SVG (OK) ------
   const copySvgBtn = document.getElementById('copy-svg');
 
-async function copySVG() {
-  const code = (out?.textContent || '').trim() || (box?.innerHTML || '').trim();
-  if (!code) {
-    showAlert('info', 'Rien à copier pour le moment.');
-    return;
+  async function copySVG() {
+    const code = (out?.textContent || '').trim() || (box?.innerHTML || '').trim();
+    if (!code) {
+      showAlert('info', 'Rien à copier pour le moment.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(code);
+      showAlert('success', 'SVG copié dans le presse-papiers ✅');
+      copySvgBtn?.classList.add('btn-success');
+      setTimeout(() => copySvgBtn?.classList.remove('btn-success'), 900);
+    } catch (e) {
+      console.error(e);
+      showAlert('error', "Impossible de copier le SVG");
+    }
   }
-  try {
-    await navigator.clipboard.writeText(code);
-    showAlert('success', 'SVG copié dans le presse-papiers ✅');
-    copySvgBtn?.classList.add('btn-success');
-    setTimeout(() => copySvgBtn?.classList.remove('btn-success'), 900);
-  } catch (e) {
-    console.error(e);
-    showAlert('error', "Impossible de copier le SVG");
-  }
-}
 
-copySvgBtn?.addEventListener('click', copySVG);
-
+  copySvgBtn?.addEventListener('click', copySVG);
 </script>
