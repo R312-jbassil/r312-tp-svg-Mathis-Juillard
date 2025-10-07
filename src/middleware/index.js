@@ -1,16 +1,6 @@
 // src/middleware/index.js
 import pb from "../utils/pb";
 
-/**
- * S'exécute avant chaque requête (pages + /api/*).
- * - Auth:
- *   - charge pb_auth du cookie et met l'utilisateur dans context.locals.user
- *   - protège toutes les routes API sauf /api/login et /api/signup
- *   - protège les pages (tout sauf /, /login, /signup)
- * - I18N:
- *   - gère le POST du sélecteur de langue (écrit le cookie 'locale')
- *   - met la langue finale dans context.locals.lang
- */
 export const onRequest = async (context, next) => {
   // -------- AUTH: charger l'utilisateur depuis le cookie --------
   const cookieAuth = context.cookies.get("pb_auth")?.value;
