@@ -1,32 +1,37 @@
-// src/pages/api/saveSVG.js
-import pb from '../../utils/pb';
-import { Collections } from '../../utils/pocketbase-types';
+import pb from "../../utils/pb";
+import { Collections } from "../../utils/pocketbase-types";
 
-export async function POST({ request }) {
+export const POST = async ({ request, cookies }) => {
+  const body = await request.json();
+
+  // Récupère l’utilisateur authentifié depuis le cookie
+  const cookie = cookies.get("pb_auth")?.value;
+  if (!cookie) return new Response("Unauthorized", { status: 401 });
+
+  pb.authStore.loadFromCookie(cookie);
+  if (!pb.authStore.isValid) return new Response("Unauthorized", { status: 401 });
+
+  // On ignore un "user" venu du client : on met celui du cookie
+  const payload = {
+    nom: body.nom,
+    code_svg: body.code_svg,
+    chat_history: typeof body.chat_history === "string"
+      ? JSON.parse(body.chat_history || "[]")
+      : (body.chat_history ?? []),
+    user: pb.authStore.record.id,
+  };
+
   try {
-    const data = await request.json();
-
-    // Normalisation des champs (adapte "title" si ton champ s'appelle autrement)
-    const payload = {
-      title: data.title ?? data.nom ?? 'Sans titre',
-      code_svg: data.code_svg ?? '',
-      // chat_history peut arriver en string => on parse
-      chat_history:
-        typeof data.chat_history === 'string'
-          ? JSON.parse(data.chat_history || '[]')
-          : (data.chat_history ?? []),
-    };
-
     const rec = await pb.collection(Collections.Svg).create(payload);
-
     return new Response(JSON.stringify({ success: true, id: rec.id }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
+      status: 200,
     });
-  } catch (err) {
-    console.error('Error saving SVG:', err);
-    return new Response(
-      JSON.stringify({ success: false, error: err?.message || 'save error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  } catch (e) {
+    console.error("saveSVG error:", e);
+    return new Response(JSON.stringify({ success: false, error: String(e) }), {
+      headers: { "Content-Type": "application/json" },
+      status: 500,
+    });
   }
-}
+};
