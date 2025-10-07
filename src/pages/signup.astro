@@ -1,69 +1,109 @@
 ---
-if (Astro.locals.user) {
-  return Astro.redirect("/");
-}
+import Layout from "../layouts/Layout.astro";
+import { ui } from "../i18n/ui.js";
+
+const locale: 'en'|'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
+if (Astro.locals.user) return Astro.redirect('/');
+
+const t = {
+  title: ui[locale]?.auth?.signupTitle ?? (locale === 'fr' ? "Créer un compte" : "Create account"),
+  name: ui[locale]?.auth?.name ?? (locale === 'fr' ? "Nom" : "Name"),
+  email: ui[locale]?.auth?.email ?? "Email",
+  password: ui[locale]?.auth?.password ?? (locale === 'fr' ? "Mot de passe" : "Password"),
+  confirm: ui[locale]?.auth?.confirm ?? (locale === 'fr' ? "Confirmer le mot de passe" : "Confirm password"),
+  submit: ui[locale]?.auth?.signupButton ?? (locale === 'fr' ? "S’inscrire" : "Sign up"),
+  have: ui[locale]?.auth?.have ?? (locale === 'fr' ? "Déjà un compte ?" : "Already have an account?"),
+  goLogin: ui[locale]?.auth?.goLogin ?? (locale === 'fr' ? "Se connecter" : "Sign in"),
+};
 ---
-<html lang="fr" data-theme="light">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
-    <title>Créer un compte</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.8.0/dist/full.css" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="min-h-screen flex items-center justify-center bg-base-200">
-    <div class="card w-full max-w-md shadow-xl bg-base-100">
-      <div class="card-body">
-        <h1 class="card-title text-3xl mb-4 justify-center">Créer un compte</h1>
 
-        <form id="signup-form" class="flex flex-col gap-4">
-          <input type="text" name="name" placeholder="Nom (optionnel)" class="input input-bordered" />
-          <input type="email" name="email" placeholder="Email" required class="input input-bordered" />
-          <input type="password" name="password" placeholder="Mot de passe" required class="input input-bordered" />
-          <button type="submit" class="btn btn-primary w-full">S'inscrire</button>
-        </form>
+<Layout title={t.title}>
+  <section class="min-h-[70vh] grid place-items-center">
+    <div class="w-full max-w-md">
+      <div class="card bg-base-100/60 backdrop-blur border border-base-300 shadow-xl">
+        <div class="card-body gap-4">
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-2xl bg-accent/20 grid place-items-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" class="opacity-80"><path fill="currentColor" d="M12 12q-1.65 0-2.825-1.175T8 8T9.175 5.175T12 4t2.825 1.175T16 8t-1.175 2.825T12 12m0 2q2.5 0 4.25 1.75T18 20h-12q0-2.5 1.75-4.25T12 14"/></svg>
+            </div>
+            <h1 class="text-2xl font-bold">{t.title}</h1>
+          </div>
 
-        <p id="status" class="mt-4 text-center text-error"></p>
+          <form id="signup-form" class="grid gap-3">
+            <label class="form-control">
+              <span class="label-text">{t.name}</span>
+              <input name="name" type="text" required class="input input-bordered" />
+            </label>
 
-        <div class="text-center mt-2">
-          <a class="link link-primary" href="/login">Déjà un compte ? Se connecter</a>
+            <label class="form-control">
+              <span class="label-text">{t.email}</span>
+              <input name="email" type="email" required class="input input-bordered" />
+            </label>
+
+            <label class="form-control">
+              <span class="label-text">{t.password}</span>
+              <input name="password" type="password" required class="input input-bordered" minlength="6" />
+            </label>
+
+            <label class="form-control">
+              <span class="label-text">{t.confirm}</span>
+              <input name="confirm" type="password" required class="input input-bordered" minlength="6" />
+            </label>
+
+            <button class="btn btn-secondary mt-2">{t.submit}</button>
+          </form>
+
+          <div id="status" class="alert hidden mt-2"></div>
+
+          <div class="text-sm opacity-70">
+            {t.have} <a class="link link-primary" href="/login">{t.goLogin}</a>
+          </div>
         </div>
       </div>
     </div>
+  </section>
 
-    <script>
-      //@ts-nocheck
-      const form = document.getElementById("signup-form");
-      const status = document.getElementById("status");
+  <script>
+    // @ts-nocheck
+    const form = document.getElementById('signup-form');
+    const status = document.getElementById('status');
 
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        status.textContent = "";
+    function show(type, text) {
+      status.className = `alert alert-${type} mt-2`;
+      status.textContent = text;
+      status.classList.remove('hidden');
+    }
 
-        const formData = new FormData(form);
-        const payload = {
-          name: formData.get("name"),
-          email: formData.get("email"),
-          password: formData.get("password"),
-        };
-
-        const res = await fetch("/api/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          credentials: "include",
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const password = fd.get('password');
+      const confirm = fd.get('confirm');
+      if (password !== confirm) {
+        show('error', '❌ Les mots de passe ne correspondent pas');
+        return;
+      }
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({
+            name: fd.get('name'),
+            email: fd.get('email'),
+            password,
+          }),
         });
-
-        if (res.ok) {
-          const data = await res.json();
-          // Sauvegarde les infos utiles côté client (comme pour /login)
-          localStorage.setItem("user", JSON.stringify(data.user));
-          window.location.href = "/";
-        } else {
-          const err = await res.json().catch(() => ({}));
-          status.textContent = "❌ " + (err.error || "Inscription impossible");
+        if (!res.ok) {
+          const err = await res.json().catch(()=>({error:'error'}));
+          show('error', '❌ ' + (err.error || 'Inscription impossible'));
+          return;
         }
-      });
-    </script>
-  </body>
-</html>
+        show('success', '✅ Compte créé ! Redirection…');
+        setTimeout(()=> location.href='/login', 500);
+      } catch (err) {
+        console.error(err);
+        show('error', '❌ Erreur réseau');
+      }
+    });
+  </script>
+</Layout>

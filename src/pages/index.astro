@@ -1,34 +1,100 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { ui } from "../i18n/ui.js";
 import pb from "../utils/pb";
 import { Collections } from "../utils/pocketbase-types";
+import { ui } from "../i18n/ui.js";
 
-const locale = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
-const user = Astro.locals.user;
+const locale: 'en'|'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
 
-let recent = [];
-if (user) {
-  try {
-    recent = await pb.collection(Collections.Svg).getFullList({
-      sort: "-created",
-      filter: `user = "${user.id}"`, // <- relation vers users
-      perPage: 3,
-    });
-  } catch (e) {
-    console.error("PB error on index:", e);
-    recent = [];
-  }
-}
+let svgs = [];
+try {
+  svgs = await pb.collection(Collections.Svg).getFullList({
+    sort: "-created",
+    $autoCancel: false,
+    perPage: 6,
+  });
+} catch {}
+
+const t = {
+  title: ui[locale]?.index?.title ?? "Welcome to SVG Generator",
+  desc: ui[locale]?.index?.description ?? "Create and render SVGs from prompts.",
+  cta1: ui[locale]?.index?.button ?? "Go to SVG Generator",
+  cta2: ui[locale]?.gallery?.title ?? (locale==='fr'?"Galerie SVG":"SVG Gallery"),
+  latest: locale==='fr' ? "Dernières créations" : "Latest creations",
+};
 ---
-<Layout title={ui[locale].index.title}>
-  <!-- ton contenu -->
-  {user && recent.length > 0 && (
-    <div class="mt-6">
-      <h2 class="text-lg font-semibold">Vos derniers SVG</h2>
-      <ul class="list-disc ml-6">
-        {recent.map(r => <li>{r.title ?? r.nom ?? r.id}</li>)}
-      </ul>
+
+<Layout title={t.title}>
+  <!-- bg décoratif -->
+  <div class="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+    <div class="hero-bg"></div>
+  </div>
+
+  <section class="py-16">
+    <div class="container mx-auto px-4">
+      <div class="glass bg-primary/10 rounded-3xl p-10 md:p-14 text-center shadow-xl border border-base-300">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-primary-content mb-4">
+          {t.title}
+        </h1>
+        <p class="text-primary-content/90 max-w-2xl mx-auto mb-8">
+          {t.desc}
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <a href="/generator" class="btn btn-secondary btn-lg">{t.cta1}</a>
+          <a href="/gallery" class="btn btn-outline">{t.cta2}</a>
+        </div>
+      </div>
     </div>
-  )}
+  </section>
+
+  <section class="pb-20">
+    <div class="container mx-auto px-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold">{t.latest}</h2>
+        <a href="/gallery" class="link link-primary">{t.cta2}</a>
+      </div>
+
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          svgs.length
+            ? svgs.map((s) => (
+                <div class="card bg-base-100 border border-base-300 shadow hover:shadow-lg transition">
+                  <div class="p-4 bg-base-200/50 rounded-t-2xl">
+                    <div class="aspect-video rounded-xl grid place-items-center overflow-auto">
+                      <div class="prose max-w-none" set:html={s.code_svg}></div>
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    <h3 class="card-title text-base">{s.title || 'Untitled'}</h3>
+                    <a href={`/gallery/${s.id}`} class="btn btn-sm btn-primary w-fit">
+                      {locale==='fr' ? "Ouvrir" : "Open"}
+                    </a>
+                  </div>
+                </div>
+              ))
+            : (
+              <div class="opacity-70">{locale==='fr' ? "Aucune création pour l’instant." : "No creations yet."}</div>
+            )
+        }
+      </div>
+    </div>
+  </section>
+
+  <style is:global>
+    /* petit gradient animé discret pour le hero */
+    .hero-bg{
+      position:absolute; inset: -20% -10% auto -10%;
+      height: 40rem;
+      background:
+        radial-gradient(40% 60% at 20% 30%, hsl(var(--p)/.15), transparent 70%),
+        radial-gradient(35% 45% at 80% 30%, hsl(var(--s)/.15), transparent 70%),
+        radial-gradient(50% 50% at 50% 70%, hsl(var(--a)/.12), transparent 70%);
+      filter: blur(30px);
+      animation: floaty 12s ease-in-out infinite alternate;
+    }
+    @keyframes floaty {
+      from { transform: translateY(-10px) rotate(-2deg); }
+      to   { transform: translateY(10px)  rotate( 2deg); }
+    }
+  </style>
 </Layout>
