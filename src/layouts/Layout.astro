@@ -45,7 +45,6 @@ const user = Astro.locals.user;
             <li><button type="button" class="theme-item" data-theme="dark">
               {ui[locale].theme?.dark ?? "Dark"}
             </button></li>
-            <!-- ajoute d’autres thèmes ici si besoin -->
           </ul>
         </details>
 
@@ -58,12 +57,12 @@ const user = Astro.locals.user;
           </select>
         </form>
       </div>
-              { !user ? (
-          /* Bouton LOGIN quand non connecté */
-          <a href="/login" class="btn btn-primary btn-sm">
-            {ui[locale].nav.login}
-          </a>
-        ) : (
+       { !user ? (
+  <div class="flex items-center gap-2">
+    <a href="/login" class="btn btn-ghost btn-sm">Se connecter</a>
+    <a href="/signup" class="btn btn-primary btn-sm">Créer un compte</a>
+  </div>
+) : (
           /* Quand connecté : petit badge + bouton LOGOUT */
           <div class="flex items-center gap-2">
             <span class="badge badge-outline hidden sm:inline">
@@ -75,6 +74,7 @@ const user = Astro.locals.user;
               </button>
             </form>
           </div>
+          
         ) }
       </div>
       
