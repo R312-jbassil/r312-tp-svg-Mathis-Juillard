@@ -3,12 +3,12 @@
 import "../styles/global.css";
 import { ui } from "../i18n/ui.js";
 const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
+const user = Astro.locals.user; 
 ---
 
 <!doctype html>
 <html lang={locale} class="h-full">
   <head>
-    <!-- Appliquer le thème le plus tôt possible -->
     <script is:inline>
       (function () {
         try {
@@ -58,6 +58,26 @@ const locale: 'en' | 'fr' = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
           </select>
         </form>
       </div>
+              { !user ? (
+          /* Bouton LOGIN quand non connecté */
+          <a href="/login" class="btn btn-primary btn-sm">
+            {ui[locale].nav.login}
+          </a>
+        ) : (
+          /* Quand connecté : petit badge + bouton LOGOUT */
+          <div class="flex items-center gap-2">
+            <span class="badge badge-outline hidden sm:inline">
+              {user?.email ?? user?.name ?? 'User'}
+            </span>
+            <form method="POST" action="/api/logout" class="m-0">
+              <button type="submit" class="btn btn-warning btn-sm">
+                {ui[locale].nav.logout}
+              </button>
+            </form>
+          </div>
+        ) }
+      </div>
+      
     </header>
 
     <main class="h-full">

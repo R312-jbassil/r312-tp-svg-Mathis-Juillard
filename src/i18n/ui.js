@@ -1,13 +1,12 @@
 // src/i18n/ui.js
 export const ui = {
   en: {
-    nav: { home: 'Home', generator: 'Generator', gallery: 'Gallery', language: 'Language' },
-    index: {
-      title: 'Welcome to SVG Generator',
-      description: 'Create and render SVGs from prompts.',
-      button: 'Go to SVG Generator',
-
-    },
+    nav: { home: 'Home', generator: 'Generator', gallery: 'Gallery', language: 'Language', login: 'Login', logout: 'Logout' },
+index: {
+  title: 'Welcome to SVG Generator',
+  description: 'Create and render SVGs from prompts.',
+  button: 'Go to SVG Generator',
+},
     theme: {
       title: 'Theme',
       light: 'Light',
@@ -30,9 +29,10 @@ export const ui = {
       empty: 'No SVGs saved yet.',
     },
   },
+  
 
   fr: {
-    nav: { home: 'Accueil', generator: 'Générateur', gallery: 'Galerie', language: 'Langue' },
+    nav: { home: 'Accueil', generator: 'Générateur', gallery: 'Galerie', language: 'Langue', login: 'Se connecter', logout: 'Se déconnecter' },
     index: {
       title: 'Bienvenue sur le générateur SVG',
       description: 'Créez et affichez des SVG à partir d’invites.',

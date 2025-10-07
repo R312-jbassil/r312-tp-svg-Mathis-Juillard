@@ -1,18 +1,34 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import { ui } from "../i18n/ui.js";
+import pb from "../utils/pb";
+import { Collections } from "../utils/pocketbase-types";
 
-const locale = (Astro.locals.lang ?? 'en');
+const locale = (Astro.locals.lang === 'fr' ? 'fr' : 'en');
+const user = Astro.locals.user;
+
+let recent = [];
+if (user) {
+  try {
+    recent = await pb.collection(Collections.Svg).getFullList({
+      sort: "-created",
+      filter: `user = "${user.id}"`, // <- relation vers users
+      perPage: 3,
+    });
+  } catch (e) {
+    console.error("PB error on index:", e);
+    recent = [];
+  }
+}
 ---
-
 <Layout title={ui[locale].index.title}>
-  <div class="flex flex-col h-full items-center justify-center glass bg-primary rounded-box p-10">
-    <h1 class="text-4xl lg:text-5xl font-bold mb-4 text-primary-content text-center">
-      {ui[locale].index.title}
-    </h1>
-    <p class="mb-6 text-lg text-primary-content/90 text-center max-w-2xl">
-      {ui[locale].index.description}
-    </p>
-    <a href="/generator" class="btn btn-secondary">{ui[locale].index.button}</a>
-  </div>
+  <!-- ton contenu -->
+  {user && recent.length > 0 && (
+    <div class="mt-6">
+      <h2 class="text-lg font-semibold">Vos derniers SVG</h2>
+      <ul class="list-disc ml-6">
+        {recent.map(r => <li>{r.title ?? r.nom ?? r.id}</li>)}
+      </ul>
+    </div>
+  )}
 </Layout>
